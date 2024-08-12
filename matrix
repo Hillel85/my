@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Operations</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/9.4.3/math.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            text-align: center;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        h1 {
+            color: #333;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            margin: 20px auto;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            border-radius: 10px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .matrix-input {
+            margin: 20px 0;
+        }
+        .matrix-input input {
+            width: 50px;
+            text-align: center;
+            margin: 5px;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: #333;
+            transition: color 0.3s;
+        }
+        .matrix-display {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        .matrix-display table {
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+        .matrix-display th, .matrix-display td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        .matrix-display th {
+            background-color: #f2f2f2;
+        }
+        .dark-mode {
+            background-color: #333;
+            color: #fff;
+        }
+        .dark-mode .container {
+            background-color: #444;
+        }
+        .dark-mode button {
+            background-color: #555;
+            color: #fff;
+        }
+        .dark-mode button:hover {
+            background-color: #666;
+        }
+        .dark-mode .matrix-display {
+            background-color: #555;
+            border-color: #666;
+        }
+        .dark-mode .matrix-display th {
+            background-color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>Matrix Operations</h1>
+    <div class="container" id="menu">
+        <h2>Select Operation</h2>
+        <button onclick="selectOperation('rank')">Rank Matrix (Rank)</button>
+        <button onclick="selectOperation('canonical')">Canonical Form (Canonical)</button>
+        <button onclick="selectOperation('arithmetic')">Matrix Arithmetic (+, *)</button>
+        <button onclick="selectOperation('transpose')">Transpose Matrix (T)</button>
+        <button onclick="selectOperation('determinant')">Determinant (Det)</button>
+        <button onclick="selectOperation('inverse')">Inverse Matrix (Inv)</button>
+        <button onclick="selectOperation('trace')">Trace of Matrix (Tr)</button>
+        <button onclick="selectOperation('eigenvalues')">Eigenvalues (Eig)</button>
+        <button onclick="selectOperation('eigenvectors')">Eigenvectors (EigVec)</button>
+        <button onclick="selectOperation('row-reduction')">Row Reduction (RowRed)</button>
+        <button onclick="toggleDarkMode()">Dark Mode</button>
+        <button onclick="toggleLanguage()">עברית</button>
+    </div>
+
+    <div class="container" id="matrix-input" style="display:none;">
+        <h2 id="operation-title"></h2>
+        <div id="matrix-forms"></div>
+        <button onclick="performOperation()">Calculate</button>
+        <button onclick="goBack()">Back to Main Menu</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        let darkMode = localStorage.getItem('darkMode') === 'true';
+        let language = localStorage.getItem('language') || 'en';
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (darkMode) {
+                document.body.classList.add('dark-mode');
+            }
+            if (language === 'he') {
+                toggleLanguage();
+            }
+        });
+
+        function toggleDarkMode() {
+            darkMode = !darkMode;
+            localStorage.setItem('darkMode', darkMode);
+            document.body.classList.toggle('dark-mode', darkMode);
+        }
+
+        function toggleLanguage() {
+            language = language === 'en' ? 'he' : 'en';
+            localStorage.setItem('language', language);
+            document.querySelectorAll('.container button').forEach(button => {
+                if (language === 'he') {
+                    if (button.innerText === 'Rank Matrix (Rank)') button.innerText = 'דירוג מטריצה (Rank)';
+                    else if (button.innerText === 'Canonical Form (Canonical)') button.innerText = 'צורה קנונית (Canonical)';
+                    else if (button.innerText === 'Matrix Arithmetic (+, *)') button.innerText = 'אריתמטיקה מטריצית (+, *)';
+                    else if (button.innerText === 'Transpose Matrix (T)') button.innerText = 'העתקת מטריצה (T)';
+                    else if (button.innerText === 'Determinant (Det)') button.innerText = 'דטרמיננטה (Det)';
+                    else if (button.innerText === 'Inverse Matrix (Inv)') button.innerText = 'מטריצה הפוכה (Inv)';
+                    else if (button.innerText === 'Trace of Matrix (Tr)') button.innerText = 'עקבה של מטריצה (Tr)';
+                    else if (button.innerText === 'Eigenvalues (Eig)') button.innerText = 'ערכים עצמיים (Eig)';
+                    else if (button.innerText === 'Eigenvectors (EigVec)') button.innerText = 'וקטורים עצמיים (EigVec)';
+                    else if (button.innerText === 'Row Reduction (RowRed)') button.innerText = 'הפחתת שורות (RowRed)';
+                    else if (button.innerText === 'Dark Mode') button.innerText = 'מצב כהה';
+                    else if (button.innerText === 'עברית') button.innerText = 'English';
+                } else {
+                    if (button.innerText === 'דירוג מטריצה (Rank)') button.innerText = 'Rank Matrix (Rank)';
+                    else if (button.innerText === 'צורה קנונית (Canonical)') button.innerText = 'Canonical Form (Canonical)';
+                    else if (button.innerText === 'אריתמטיקה מטריצית (+, *)') button.innerText = 'Matrix Arithmetic (+, *)';
+                    else if (button.innerText === 'העתקת מטריצה (T)') button.innerText = 'Transpose Matrix (T)';
+                    else if (button.innerText === 'דטרמיננטה (Det)') button.innerText = 'Determinant (Det)';
+                    else if (button.innerText === 'מטריצה הפוכה (Inv)') button.innerText = 'Inverse Matrix (Inv)';
+                    else if (button.innerText === 'עקבה של מטריצה (Tr)') button.innerText = 'Trace of Matrix (Tr)';
+                    else if (button.innerText === 'ערכים עצמיים (Eig)') button.innerText = 'Eigenvalues (Eig)';
+                    else if (button.innerText === 'וקטורים עצמיים (EigVec)') button.innerText = 'Eigenvectors (EigVec)';
+                    else if (button.innerText === 'הפחתת שורות (RowRed)') button.innerText = 'Row Reduction (RowRed)';
+                    else if (button.innerText === 'מצב כהה') button.innerText = 'Dark Mode';
+                    else if (button.innerText === 'English') button.innerText = 'עברית';
+                }
+            });
+        }
+
+        function selectOperation(operation) {
+    document.getElementById('menu').style.display = 'none';
+    document.getElementById('matrix-input').style.display = 'block';
+    document.getElementById('operation-title').innerText = 
+        language === 'en' ?
+        operation === 'arithmetic' ? 'Matrix Arithmetic (Sum, Product)' :
+        operation === 'rank' ? 'Rank Matrix (Rank)' :
+        operation === 'canonical' ? 'Canonical Form (Canonical)' :
+        operation === 'transpose' ? 'Transpose Matrix (T)' :
+        operation === 'determinant' ? 'Determinant (Det)' :
+        operation === 'inverse' ? 'Inverse Matrix (Inv)' :
+        operation === 'trace' ? 'Trace of Matrix (Tr)' :
+        operation === 'eigenvalues' ? 'Eigenvalues (Eig)' :
+        operation === 'eigenvectors' ? 'Eigenvectors (EigVec)' :
+        operation === 'row-reduction' ? 'Row Reduction (RowRed)' :
+        '' :
+        operation === 'arithmetic' ? 'אריתמטיקה מטריצית (Sum, Product)' :
+        operation === 'rank' ? 'דירוג מטריצה (Rank)' :
+        operation === 'canonical' ? 'צורה קנונית (Canonical)' :
+        operation === 'transpose' ? 'העתקת מטריצה (T)' :
+        operation === 'determinant' ? 'דטרמיננטה (Det)' :
+        operation === 'inverse' ? 'מטריצה הפוכה (Inv)' :
+        operation === 'trace' ? 'עקבה של מטריצה (Tr)' :
+        operation === 'eigenvalues' ? 'ערכים עצמיים (Eig)' :
+        operation === 'eigenvectors' ? 'וקטורים עצמיים (EigVec)' :
+        operation === 'row-reduction' ? 'הפחתת שורות (RowRed)' :
+        '';
+
+    const matrixForms = document.getElementById('matrix-forms');
+    matrixForms.innerHTML = '';
+
+    const matrixCount = operation === 'arithmetic' ? 2 : 1;
+    for (let i = 0; i < matrixCount; i++) {
+        const matrixDiv = document.createElement('div');
+        matrixDiv.classList.add('matrix-input');
+        matrixDiv.innerHTML = `
+            <h3>${language === 'en' ? 'Matrix' : 'מטריצה'} ${i + 1}</h3>
+            <label>${language === 'en' ? 'Rows' : 'שורות'}: <input type="number" id="rows${i}" value="3" min="1"></label>
+            <label>${language === 'en' ? 'Cols' : 'עמודות'}: <input type="number" id="cols${i}" value="3" min="1"></label>
+            <div id="matrix${i}"></div>
+            <button type="button" onclick="generateMatrix(${i})">${language === 'en' ? 'Generate Matrix' : 'צור מטריצה'}</button>
+        `;
+        matrixForms.appendChild(matrixDiv);
+            }
+        }
+function generateMatrix(index) {
+        const rows = document.getElementById(`rows${index}`).value;
+        const cols = document.getElementById(`cols${index}`).value;
+        const matrixDiv = document.getElementById(`matrix${index}`);
+        matrixDiv.innerHTML = '';
+        
+        for (let i = 0; i < rows; i++) {
+            const rowDiv = document.createElement('div');
+            for (let j = 0; j < cols; j++) {
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.id = `matrix${index}_${i}_${j}`;
+                rowDiv.appendChild(input);
+            }
+            matrixDiv.appendChild(rowDiv);
+        }
+    }
+
+    function performOperation() {
+        const operation = document.getElementById('operation-title').innerText.split(' ')[0].toLowerCase();
+        let result = '';
+
+        const matrix1 = getMatrix(0);
+        if (!matrix1) return;
+
+        if (operation === 'rank') {
+            const rank = calculateRank(matrix1);
+            result = `${language === 'en' ? 'Rank' : 'דירוג'}: ` + rank;
+        } else if (operation === 'canonical') {
+            const canonicalMatrix = calculateCanonicalForm(matrix1);
+            result = `${language === 'en' ? 'Canonical Form' : 'צורה קנונית'}: <br>` + displayMatrix(canonicalMatrix);
+        } else if (operation === 'arithmetic') {
+            const matrix2 = getMatrix(1);
+            if (!matrix2) return;
+            const sum = math.add(matrix1, matrix2);
+            const product = math.multiply(matrix1, matrix2);
+            result = `<div class="matrix-display">${language === 'en' ? 'Sum' : 'סכום'}: <br>${displayMatrix(sum)}</div>
+                      <div class="matrix-display">${language === 'en' ? 'Product' : 'מכפלה'}: <br>${displayMatrix(product)}</div>`;
+        } else if (operation === 'transpose') {
+            const transposedMatrix = math.transpose(matrix1);
+            result = `${language === 'en' ? 'Transposed Matrix' : 'מטריצה משוכפלת'}: <br>` + displayMatrix(transposedMatrix);
+        } else if (operation === 'determinant') {
+            const determinantValue = math.det(matrix1);
+            result = `${language === 'en' ? 'Determinant' : 'דטרמיננטה'}: ` + determinantValue;
+        } else if (operation === 'inverse') {
+            const inverseMatrix = calculateInverseMatrix(matrix1);
+            result = `${language === 'en' ? 'Inverse Matrix' : 'מטריצה הפוכה'}: <br>` + displayMatrix(inverseMatrix);
+        } else if (operation === 'trace') {
+            const traceValue = calculateTrace(matrix1);
+            result = `${language === 'en' ? 'Trace' : 'עקבה'}: ` + traceValue;
+        } else if (operation === 'eigenvalues') {
+            const eigenvalues = math.eigs(matrix1).values;
+            result = `${language === 'en' ? 'Eigenvalues' : 'ערכים עצמיים'}: ` + eigenvalues.join(', ');
+        } else if (operation === 'eigenvectors') {
+            const eigenvectors = math.eigs(matrix1).vectors;
+            result = `${language === 'en' ? 'Eigenvectors' : 'וקטורים עצמיים'}: <br>` + eigenvectors.map(vec => displayMatrix([vec])).join('<br>');
+        } else if (operation === 'rowreduction') {
+            const reducedMatrix = calculateRowReduction(matrix1);
+            result = `${language === 'en' ? 'Row Reduced Matrix' : 'מטריצה מופחתת'}: <br>` + displayMatrix(reducedMatrix);
+        }
+
+        document.getElementById('result').innerHTML = result;
+    }
+
+    function goBack() {
+        document.getElementById('menu').style.display = 'block';
+        document.getElementById('matrix-input').style.display = 'none';
+        document.getElementById('result').innerHTML = '';
+    }
+
+    function calculateTrace(matrix) {
+        if (matrix.length !== matrix[0].length) {
+            throw new Error("Matrix must be square to calculate the trace.");
+        }
+        let trace = 0;
+        for (let i = 0; i < matrix.length; i++) {
+            trace += matrix[i][i];
+        }
+        return trace;
+    }
+
+    function calculateRank(matrix) {
+    const reducedMatrix = calculateRowReduction(matrix);
+    let rank = 0;
+    for (let i = 0; i < reducedMatrix.length; i++) {
+        if (reducedMatrix[i].some(val => Math.abs(val) > 1e-10)) {
+            rank++;
+        }
+    }
+    return { rank, reducedMatrix };
+}
+
+function calculateRowReduction(matrix) {
+    const rows = matrix.length;
+    const cols = matrix[0].length;
+    let m = math.clone(matrix);
+
+    for (let i = 0, lead = 0; i < rows && lead < cols; i++) {
+        let row = i;
+        while (lead < cols && Math.abs(m[row][lead]) < 1e-10) {
+            row++;
+            if (row === rows) {
+                row = i;
+                lead++;
+                if (lead === cols) return m;
+            }
+        }
+
+        [m[row], m[i]] = [m[i], m[row]];
+
+        let val = m[i][lead];
+        for (let j = 0; j < cols; j++) {
+            m[i][j] /= val;
+        }
+
+        for (let j = 0; j < rows; j++) {
+            if (j !== i) {
+                val = m[j][lead];
+                for (let k = 0; k < cols; k++) {
+                    m[j][k] -= val * m[i][k];
+                }
+            }
+        }
+        lead++;
+    }
+    return m;
+}
+
+
+function performOperation() {
+    const operation = document.getElementById('operation-title').innerText.split(' ')[0].toLowerCase();
+    let result = '';
+
+    const matrix1 = getMatrix(0);
+    if (!matrix1) return;
+
+    if (operation === 'rank') {
+        const { rank, reducedMatrix } = calculateRank(matrix1);
+        result = `${language === 'en' ? 'Rank' : 'דירוג'}: ${rank} <br>`;
+        result += `${language === 'en' ? 'Reduced Matrix' : 'מטריצה מדורגת'}: <br>` + displayMatrix(reducedMatrix);
+    } else if (operation === 'canonical') {
+        const canonicalMatrix = calculateCanonicalForm(matrix1);
+        result = `${language === 'en' ? 'Canonical Form' : 'צורה קנונית'}: <br>` + displayMatrix(canonicalMatrix);
+    } else if (operation === 'arithmetic') {
+        const matrix2 = getMatrix(1);
+        if (!matrix2) return;
+        const sum = math.add(matrix1, matrix2);
+        const product = math.multiply(matrix1, matrix2);
+        result = `<div class="matrix-display">${language === 'en' ? 'Sum' : 'סכום'}: <br>${displayMatrix(sum)}</div>
+                  <div class="matrix-display">${language === 'en' ? 'Product' : 'מכפלה'}: <br>${displayMatrix(product)}</div>`;
+    } else if (operation === 'transpose') {
+        const transposedMatrix = math.transpose(matrix1);
+        result = `${language === 'en' ? 'Transposed Matrix' : 'מטריצה משוכפלת'}: <br>` + displayMatrix(transposedMatrix);
+    } else if (operation === 'determinant') {
+        const determinantValue = math.det(matrix1);
+        result = `${language === 'en' ? 'Determinant' : 'דטרמיננטה'}: ` + determinantValue;
+    } else if (operation === 'inverse') {
+        const inverseMatrix = calculateInverseMatrix(matrix1);
+        result = `${language === 'en' ? 'Inverse Matrix' : 'מטריצה הפוכה'}: <br>` + displayMatrix(inverseMatrix);
+    } else if (operation === 'trace') {
+        const traceValue = calculateTrace(matrix1);
+        result = `${language === 'en' ? 'Trace' : 'עקבה'}: ` + traceValue;
+    } else if (operation === 'eigenvalues') {
+        const eigenvalues = math.eigs(matrix1).values;
+        result = `${language === 'en' ? 'Eigenvalues' : 'ערכים עצמיים'}: ` + eigenvalues.join(', ');
+    } else if (operation === 'eigenvectors') {
+        const eigenvectors = math.eigs(matrix1).vectors;
+        result = `${language === 'en' ? 'Eigenvectors' : 'וקטורים עצמיים'}: <br>` + eigenvectors.map(vec => displayMatrix([vec])).join('<br>');
+    } else if (operation === 'rowreduction') {
+        const reducedMatrix = calculateRowReduction(matrix1);
+        result = `${language === 'en' ? 'Row Reduced Matrix' : 'מטריצה מופחתת'}: <br>` + displayMatrix(reducedMatrix);
+    }
+
+    document.getElementById('result').innerHTML = result;
+}
+    function calculateCanonicalForm(matrix) {
+        return calculateRowReduction(matrix);
+    }
+
+     
+    function calculateInverseMatrix(matrix) {
+        if (matrix.length !== matrix[0].length) {
+            throw new Error("Matrix must be square to calculate the inverse.");
+        }
+        return math.inv(matrix);
+    }
+
+    function getMatrix(index) {
+    const rows = parseInt(document.getElementById(`rows${index}`).value, 10);
+    const cols = parseInt(document.getElementById(`cols${index}`).value, 10);
+    const matrix = [];
+
+    for (let i = 0; i < rows; i++) {
+        const row = [];
+        for (let j = 0; j < cols; j++) {
+            const value = parseFloat(document.getElementById(`matrix${index}_${i}_${j}`).value);
+            if (isNaN(value)) {
+                alert(`${language === 'en' ? 'Invalid value in matrix' : 'ערך לא חוקי במטריצה'}`);
+                return null;
+            }
+            row.push(value);
+        }
+        matrix.push(row);
+    }
+    return matrix;
+}
+    function displayMatrix(matrix) {
+        return `<div class="matrix-display">
+                    <table>${matrix.map(row => `<tr>${row.map(val => `<td>${val.toFixed(2)}</td>`).join('')}</tr>`).join('')}</table>
+                </div>`;
+    }
+</script>
+</body>
+</html>
